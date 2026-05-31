@@ -69,6 +69,7 @@ class TreeLayoutEngineTest {
         val edge = result.edges.single()
         assertEquals(Offset(root.offset.x + root.size.width / 2f, root.offset.y + root.size.height), edge.start)
         assertEquals(Offset(child.offset.x + child.size.width / 2f, child.offset.y), edge.end)
+        assertEquals(MindMapEdgeDirection.VERTICAL, edge.direction)
     }
 
     @Test
@@ -94,5 +95,6 @@ class TreeLayoutEngineTest {
         val edge = result.edges.first { it.childId == "top" }
         assertEquals(Offset(root.offset.x + root.size.width, root.offset.y + root.size.height / 2f), edge.start)
         assertEquals(Offset(top.offset.x, top.offset.y + top.size.height / 2f), edge.end)
+        assertEquals(MindMapEdgeDirection.HORIZONTAL, edge.direction)
     }
 }

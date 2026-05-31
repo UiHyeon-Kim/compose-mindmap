@@ -26,7 +26,17 @@ data class MindMapLayoutEdge(
     val childId: String,
     val start: Offset,
     val end: Offset,
+    val direction: MindMapEdgeDirection = if (kotlin.math.abs(end.y - start.y) >= kotlin.math.abs(end.x - start.x)) {
+        MindMapEdgeDirection.VERTICAL
+    } else {
+        MindMapEdgeDirection.HORIZONTAL
+    },
 )
+
+enum class MindMapEdgeDirection {
+    VERTICAL,
+    HORIZONTAL,
+}
 
 data class MindMapLayoutResult(
     val nodes: List<MindMapLayoutNode> = emptyList(),
@@ -93,7 +103,7 @@ object TopDownTreeLayoutEngine : MindMapLayoutEngine {
             place(root, 0f, 0f)
             MindMapLayoutResult(
                 nodes = result,
-                edges = result.edges { parent, child ->
+                edges = result.edges(MindMapEdgeDirection.VERTICAL) { parent, child ->
                     Offset(parent.offset.x + parent.size.width / 2f, parent.offset.y + parent.size.height) to
                         Offset(child.offset.x + child.size.width / 2f, child.offset.y)
                 },
@@ -150,7 +160,7 @@ object LeftToRightTreeLayoutEngine : MindMapLayoutEngine {
             place(root, 0f, 0f)
             MindMapLayoutResult(
                 nodes = result,
-                edges = result.edges { parent, child ->
+                edges = result.edges(MindMapEdgeDirection.HORIZONTAL) { parent, child ->
                     Offset(parent.offset.x + parent.size.width, parent.offset.y + parent.size.height / 2f) to
                         Offset(child.offset.x, child.offset.y + child.size.height / 2f)
                 },
@@ -160,6 +170,7 @@ object LeftToRightTreeLayoutEngine : MindMapLayoutEngine {
 }
 
 private fun List<MindMapLayoutNode>.edges(
+    direction: MindMapEdgeDirection,
     anchors: (parent: MindMapLayoutNode, child: MindMapLayoutNode) -> Pair<Offset, Offset>,
 ): List<MindMapLayoutEdge> {
     val nodeMap = associateBy { it.node.id }
@@ -167,6 +178,12 @@ private fun List<MindMapLayoutNode>.edges(
         val parentId = child.node.parentId ?: return@mapNotNull null
         val parent = nodeMap[parentId] ?: return@mapNotNull null
         val (start, end) = anchors(parent, child)
-        MindMapLayoutEdge(parentId = parentId, childId = child.node.id, start = start, end = end)
+        MindMapLayoutEdge(
+            parentId = parentId,
+            childId = child.node.id,
+            start = start,
+            end = end,
+            direction = direction,
+        )
     }
 }
