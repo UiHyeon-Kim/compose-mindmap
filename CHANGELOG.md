@@ -8,7 +8,8 @@ Initial preview release.
 - Compose Canvas-based mind map rendering
 - `MindMapCanvas` and `PayloadMindMapCanvas<T>` composables
 - Top-down (`TopDownTreeLayoutEngine`) and left-to-right (`LeftToRightTreeLayoutEngine`) layout engines
-- Curved (`CurvedMindMapEdgeRenderer`) and straight (`StraightMindMapEdgeRenderer`) edge renderers
+- Curved (`CurvedMindMapEdgeRenderer`), straight (`StraightMindMapEdgeRenderer`), and orthogonal
+  (`OrthogonalMindMapEdgeRenderer`) edge renderers
 - Tree validation with `validateMindMapNodes()`
 - Undo/redo editing via `MindMapEditController`
 - `MindMapEditPolicy`: gate add-child, drag, and drop per node

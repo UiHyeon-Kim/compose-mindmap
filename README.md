@@ -105,6 +105,21 @@ MindMapCanvas(
 | `TopDownTreeLayoutEngine` | Top-center root |
 | `LeftToRightTreeLayoutEngine` | Center-start root |
 
+## Edge Renderers
+
+| Renderer | Shape |
+|---|---|
+| `CurvedMindMapEdgeRenderer` | Curved (default) |
+| `StraightMindMapEdgeRenderer` | Straight |
+| `OrthogonalMindMapEdgeRenderer` | Orthogonal |
+
+```kotlin
+MindMapCanvas(
+    nodes = nodes,
+    edgeRenderer = OrthogonalMindMapEdgeRenderer,
+)
+```
+
 ## License
 
 Apache-2.0 — see [LICENSE](LICENSE)

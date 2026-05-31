@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.hanhyo.composemindmap.canvas.MindMapCanvas
+import io.github.hanhyo.composemindmap.canvas.OrthogonalMindMapEdgeRenderer
 import io.github.hanhyo.composemindmap.canvas.PayloadMindMapCanvas
 import io.github.hanhyo.composemindmap.canvas.StraightMindMapEdgeRenderer
 import io.github.hanhyo.composemindmap.layout.LeftToRightTreeLayoutEngine
@@ -35,6 +36,17 @@ private fun LeftToRightStraightMindMapPreview() {
             nodes = sampleNodes,
             layoutEngine = LeftToRightTreeLayoutEngine,
             edgeRenderer = StraightMindMapEdgeRenderer,
+        )
+    }
+}
+
+@Preview(widthDp = 420, heightDp = 500, showBackground = true)
+@Composable
+private fun TopDownOrthogonalMindMapPreview() {
+    Surface {
+        MindMapCanvas(
+            nodes = sampleNodes,
+            edgeRenderer = OrthogonalMindMapEdgeRenderer,
         )
     }
 }
