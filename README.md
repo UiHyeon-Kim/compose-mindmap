@@ -12,7 +12,7 @@ repositories { maven("https://jitpack.io") }
 
 // build.gradle.kts
 dependencies {
-    implementation("com.github.UiHyeon-Kim.compose-mindmap:compose-mindmap:0.1.0")
+    implementation("com.github.UiHyeon-Kim:compose-mindmap:0.1.0")
 }
 ```
 

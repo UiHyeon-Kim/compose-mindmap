@@ -27,6 +27,6 @@ Initial preview release.
 ```kotlin
 repositories { maven("https://jitpack.io") }
 dependencies {
-    implementation("com.github.UiHyeon-Kim.compose-mindmap:compose-mindmap:0.1.0")
+    implementation("com.github.UiHyeon-Kim:compose-mindmap:0.1.0")
 }
 ```
