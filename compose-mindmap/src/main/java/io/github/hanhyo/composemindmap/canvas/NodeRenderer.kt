@@ -14,6 +14,7 @@ import io.github.hanhyo.composemindmap.model.MindMapNode
 import io.github.hanhyo.composemindmap.model.MindMapStyle
 
 @Immutable
+/** Selection, drag, child, and collapse flags passed to node rendering and accessibility labels. */
 data class MindMapNodeVisualState(
     val isSelected: Boolean = false,
     val isDragging: Boolean = false,
@@ -23,6 +24,7 @@ data class MindMapNodeVisualState(
     val isCollapsed: Boolean = false,
 )
 
+/** Draws a node directly into the Canvas when no Compose [MindMapCanvas] node slot is supplied. */
 fun interface MindMapCanvasNodeRenderer {
     fun DrawScope.draw(
         node: MindMapNode,
@@ -117,4 +119,3 @@ object DefaultMindMapCanvasNodeRenderer : MindMapCanvasNodeRenderer {
         }
     }
 }
-

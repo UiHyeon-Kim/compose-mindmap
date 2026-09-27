@@ -8,6 +8,7 @@ import io.github.hanhyo.composemindmap.model.MindMapNode
 import io.github.hanhyo.composemindmap.model.MindMapStyle
 import io.github.hanhyo.composemindmap.model.defaultNodeSize
 
+/** Validated visible nodes, style, density, and node size callback supplied to a layout engine. */
 data class MindMapLayoutInput(
     val nodes: List<MindMapNode>,
     val style: MindMapStyle,
@@ -49,12 +50,14 @@ enum class MindMapRootAlignment {
     CENTER,
 }
 
+/** Places tree nodes and their edges in Canvas pixels. */
 interface MindMapLayoutEngine {
     val rootAlignment: MindMapRootAlignment
 
     fun layout(input: MindMapLayoutInput): MindMapLayoutResult
 }
 
+/** Places the root above its descendants. */
 object TopDownTreeLayoutEngine : MindMapLayoutEngine {
     override val rootAlignment = MindMapRootAlignment.TOP_CENTER
 
@@ -112,6 +115,7 @@ object TopDownTreeLayoutEngine : MindMapLayoutEngine {
     }
 }
 
+/** Places the root to the left of its descendants. */
 object LeftToRightTreeLayoutEngine : MindMapLayoutEngine {
     override val rootAlignment = MindMapRootAlignment.CENTER_START
 

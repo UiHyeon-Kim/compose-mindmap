@@ -11,6 +11,7 @@ import io.github.hanhyo.composemindmap.model.MindMapStyle
 import io.github.hanhyo.composemindmap.model.MindMapValidationResult
 import io.github.hanhyo.composemindmap.model.defaultNodeSize
 
+/** Typed-payload variant of [MindMapCanvas], with the same layout and editing callbacks. */
 @Composable
 fun <T> PayloadMindMapCanvas(
     nodes: List<MindMapNodeWithPayload<T>>,
@@ -29,7 +30,9 @@ fun <T> PayloadMindMapCanvas(
     addChildActionLayout: MindMapAddChildActionLayout = DefaultMindMapAddChildActionLayout,
     editDecorationRenderer: MindMapEditDecorationRenderer? = null,
     semanticLabelProvider: MindMapSemanticLabelProvider = DefaultMindMapSemanticLabelProvider,
+    accessibilityActionLabels: MindMapAccessibilityActionLabels? = null,
     nodeContent: (@Composable (MindMapNodeWithPayload<T>, MindMapNodeVisualState) -> Unit)? = null,
+    errorContent: (@Composable (MindMapValidationResult.Invalid) -> Unit)? = null,
     onValidationError: (MindMapValidationResult.Invalid) -> Unit = {},
     onNodeClick: (nodeId: String) -> Unit = {},
     onNodeLongClick: (nodeId: String) -> Unit = {},
@@ -55,9 +58,11 @@ fun <T> PayloadMindMapCanvas(
         addChildActionLayout = addChildActionLayout,
         editDecorationRenderer = editDecorationRenderer,
         semanticLabelProvider = semanticLabelProvider,
+        accessibilityActionLabels = accessibilityActionLabels,
         nodeContent = nodeContent?.let { content ->
             { node, visualState -> content(payloadById.getValue(node.id), visualState) }
         },
+        errorContent = errorContent,
         onValidationError = onValidationError,
         onNodeClick = onNodeClick,
         onNodeLongClick = onNodeLongClick,

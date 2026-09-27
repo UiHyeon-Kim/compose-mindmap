@@ -16,6 +16,7 @@ sealed interface MindMapValidationError {
     data class UnreachableNode(val nodeId: String) : MindMapValidationError
 }
 
+/** Checks root count, IDs, parents, cycles, and reachability before layout. */
 fun validateMindMapNodes(nodes: List<MindMapNode>): MindMapValidationResult {
     if (nodes.isEmpty()) return MindMapValidationResult.Valid
 

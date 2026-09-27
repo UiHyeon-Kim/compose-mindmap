@@ -2,6 +2,7 @@ package io.github.hanhyo.composemindmap.canvas
 
 import io.github.hanhyo.composemindmap.model.MindMapNode
 
+/** App-specific permission checks for Canvas edit affordances; cycle drops are always rejected. */
 interface MindMapEditPolicy {
     fun canAddChild(node: MindMapNode): Boolean
     fun canDrag(node: MindMapNode): Boolean

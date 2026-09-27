@@ -8,6 +8,7 @@ import io.github.hanhyo.composemindmap.layout.MindMapEdgeDirection
 import io.github.hanhyo.composemindmap.layout.MindMapLayoutEdge
 import io.github.hanhyo.composemindmap.model.MindMapStyle
 
+/** Draws one laid-out parent-child edge in Canvas coordinates. */
 fun interface MindMapEdgeRenderer {
     fun DrawScope.draw(edge: MindMapLayoutEdge, style: MindMapStyle)
 }

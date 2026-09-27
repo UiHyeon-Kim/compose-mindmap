@@ -1,0 +1,6 @@
+<resources>
+    <string name="mind_map_select">Select node</string>
+    <string name="mind_map_long_press">Long press node</string>
+    <string name="mind_map_add_child">Add child node</string>
+    <string name="mind_map_invalid_tree">Unable to display mind map: invalid tree</string>
+</resources>

@@ -2,6 +2,7 @@ package io.github.hanhyo.composemindmap.controller
 
 import io.github.hanhyo.composemindmap.model.MindMapNode
 
+/** In-memory immutable-list edit commands with undo/redo. Persist your node list separately. */
 class MindMapEditController {
 
     private val undoStack = ArrayDeque<NodeEditCommand>()
