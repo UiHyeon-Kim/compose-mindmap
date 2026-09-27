@@ -3,15 +3,14 @@ package io.github.hanhyo.composemindmap.sample
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -27,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import io.github.hanhyo.composemindmap.canvas.CurvedMindMapEdgeRenderer
 import io.github.hanhyo.composemindmap.canvas.MindMapCanvas
 import io.github.hanhyo.composemindmap.canvas.MindMapEdgeRenderer
@@ -49,6 +49,7 @@ import io.github.hanhyo.composemindmap.model.withPayload
 class SampleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = true
         setContent { MaterialTheme { Showcase() } }
     }
 }
@@ -177,17 +178,24 @@ private fun Showcase() {
 }
 
 @Composable
-private fun ControlRow(content: @Composable RowScope.() -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 3.dp),
+private fun ControlRow(content: @Composable FlowRowScope.() -> Unit) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 3.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         content = content,
     )
 }
 
 @Composable
 private fun Control(label: String, enabled: Boolean = true, onClick: () -> Unit) {
-    OutlinedButton(onClick = onClick, enabled = enabled) { Text(label) }
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+    ) {
+        Text(label)
+    }
 }
 
 @Composable
