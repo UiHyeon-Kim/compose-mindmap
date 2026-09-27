@@ -43,7 +43,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "io.github.hanhyo"
                 artifactId = "compose-mindmap"
-                version = "0.1.1"
+                version = "0.2.0"
 
                 pom {
                     name.set("Compose MindMap")

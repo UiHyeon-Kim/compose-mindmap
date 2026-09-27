@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 — pending tag
+
+- Pinch zoom follows the gesture centroid and supports two-finger panning; single-finger pan and node drag remain separate
+- Restored viewport is preserved, and `focusNode` applies its padding
+- `MindMapCanvasState.zoomBy` provides center-anchored programmatic zoom
+- Invalid trees show configurable error content and trigger validation callbacks; collapsed branches are validated too
+- Drag/drop rejects descendants, node slots are keyed by ID, and density changes recompute layout
+- Accessible labels can use node visual state; action names are localized and overridable; add-child touch target is at least 48 dp
+- Sample app now demonstrates layout/edge/style/payload/edit/collapse/viewport controls
+- README, Korean guide, migration guide, CI, and contribution guidance added
+
 ## [0.1.1] - 2026-06-01
 
 ### Added
