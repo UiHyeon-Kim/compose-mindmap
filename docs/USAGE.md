@@ -2,6 +2,10 @@
 
 This guide expands the [README quick start](../README.md#quick-start) with complete examples for custom Compose cards, app-owned edits, and viewport controls. The library accepts a flat list of nodes; your app keeps that list as its source of truth.
 
+## AGP 9.1 build settings
+
+This repository uses AGP 9.1.0 with `android.builtInKotlin=false` and `android.newDsl=false` in its root [gradle.properties](../gradle.properties). The standalone consumer fixture mirrors those settings. If your consumer also uses AGP 9.1.0, use the same properties in its root `gradle.properties`; validate the settings against your chosen AGP before copying them to a different version.
+
 ## Tree data
 
 Provide exactly one root (`parentId = null`), a unique non-empty `id` for every node, and a parent ID that exists in the same list for every non-root node. Input is validated before layout. Invalid input calls `onValidationError` and renders the default localized error message unless you supply `errorContent`.
@@ -10,7 +14,16 @@ Provide exactly one root (`parentId = null`), a unique non-empty `id` for every 
 
 `nodeContent` replaces the default Canvas card renderer with Compose UI. Tell the layout engine the size of each card using `nodeSize`; the dimensions must match the content's measured size so spacing, hit testing, and connector endpoints line up.
 
-This example uses Material 3 components; add the Compose Material 3 dependency to your app or replace them with your own Compose design-system components.
+This example uses Material 3 components. Add Material 3 to the app module; the BOM version below matches this repository's sample catalog in [`gradle/libs.versions.toml`](../gradle/libs.versions.toml):
+
+```kotlin
+dependencies {
+    implementation(platform("androidx.compose:compose-bom:2026.03.01"))
+    implementation("androidx.compose.material3:material3")
+}
+```
+
+If your app already imports a Compose BOM, keep its existing version and add only the Material 3 artifact. You can also replace these components with your own Compose design-system components.
 
 ```kotlin
 import androidx.compose.foundation.layout.Arrangement
