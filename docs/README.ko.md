@@ -1,18 +1,62 @@
 # Compose MindMap 사용 안내
 
-Compose MindMap은 Android Jetpack Compose에서 트리형 마인드맵을 그리는 라이브러리입니다. 노드를 선택·이동·접고, 두 손가락으로 확대·이동할 수 있습니다. 샘플 앱에는 레이아웃, 간선, 카드 모양, 편집, 뷰포트 조작 버튼이 있습니다
+Compose MindMap은 Android Jetpack Compose에서 편집 가능한 트리형 마인드맵을 그리는 라이브러리입니다. 기본 `MindMapNode` 목록으로 시작해 배치, 간선, 카드, 제스처와 뷰포트를 바꿀 수 있습니다
 
-![API 36 에뮬레이터에서 실행한 샘플](images/sample.png)
+![API 36 에뮬레이터에서 실행한 Compose MindMap 샘플](images/sample.png)
 
-![실제 샘플에서 노드를 추가하고 확대하는 장면](images/edit-and-zoom.gif)
+## 주요 동작
 
-## 설치
+### 트리 배치와 간선
 
-Android `minSdk 26`, Java 17, Jetpack Compose가 필요합니다. `0.2.0` 태그와 JitPack 빌드가 공개되면 아래 좌표를 사용할 수 있습니다. 그 전에는 저장소의 `sample` 모듈을 실행하세요
+![샘플에서 트리 배치와 간선 스타일을 전환하는 화면](images/layout-edge.gif)
 
-`settings.gradle.kts`의 `dependencyResolutionManagement.repositories`에 다음을 추가합니다
+`MindMapLayoutEngine`으로 좌→우 또는 위→아래 배치를, `MindMapEdgeRenderer`로 곡선·직선·직각 간선을 선택합니다. 샘플 경로는 `Controls → Display → Layout: Left → right / Top → down`, `Edge: Curve / Straight / Elbow`입니다. 배치를 바꾸면 샘플이 전체 트리를 다시 맞추므로 캡처마다 확대율은 다릅니다
+
+### 기본 Canvas 카드와 typed-payload 카드
+
+![왼쪽은 기본 Canvas 카드, 오른쪽은 타입이 있는 payload로 그린 Compose 카드](images/default-vs-payload.png)
+
+왼쪽은 기본 Canvas 렌더러, 오른쪽은 `PayloadMindMapCanvas`, `withPayload`, `nodeContent`, `nodeSize`를 사용한 카드입니다. 샘플의 `Controls → Display → Card: Canvas / Payload`에서 비교할 수 있습니다
+
+### 자식 추가, 실행 취소와 다시 실행
+
+![샘플에서 자식 노드를 추가하고 Undo한 뒤 Redo하는 화면](images/edit.gif)
+
+앱이 노드 목록을 소유하고 `MindMapEditController`가 편집 이력을 관리합니다. 노드를 선택한 다음 `Controls → Selected node → Add child`를 누르고, `Controls → History → Undo / Redo`로 되돌리거나 다시 적용합니다. 이 데모는 자식 추가·Undo·Redo만 보여 줍니다
+
+### 확대와 전체 트리 맞춤
+
+![샘플에서 확대했다가 전체 트리를 다시 맞추는 화면](images/zoom-fit.gif)
+
+`MindMapCanvasState.zoomBy()`와 `fitContent()`로 뷰포트를 제어합니다. 샘플 경로는 `Controls → Viewport → Zoom + / Fit all`입니다. 확대하면 일부 노드가 화면 밖에 놓일 수 있고, `Fit all`은 전체 트리를 다시 보여 줍니다
+
+## 샘플 실행
+
+Android Studio에서 `sample` 실행 구성을 선택하거나 API 26 이상 기기·에뮬레이터에 설치합니다
+
+```bash
+./gradlew :sample:installDebug
+```
+
+샘플은 공개 Maven/JitPack 아티팩트가 아니라 저장소의 모듈을 직접 사용하므로 릴리스 전에도 실행할 수 있습니다. 전체 예제는 [샘플 액티비티](../sample/src/main/java/io/github/hanhyo/composemindmap/sample/SampleActivity.kt)에서 볼 수 있습니다
+
+## 설치 상태
+
+`0.2.0`은 아직 Git 태그와 JitPack 아티팩트로 공개되지 않았습니다. 아래 좌표는 태그 공개와 JitPack 빌드 성공 뒤에 사용할 수 있습니다. 지금은 위 샘플을 실행해 주세요
+
+Android Jetpack Compose, `minSdk 26`, Java 17이 필요합니다. `settings.gradle.kts`에 다음 저장소 설정을 추가합니다
 
 ```kotlin
+import org.gradle.api.initialization.resolve.RepositoriesMode
+
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -23,7 +67,7 @@ dependencyResolutionManagement {
 }
 ```
 
-앱 모듈의 `build.gradle.kts`에는 다음을 추가합니다
+태그 공개 뒤 앱 모듈의 `build.gradle.kts`에 추가할 좌표입니다
 
 ```kotlin
 dependencies {
@@ -31,42 +75,36 @@ dependencies {
 }
 ```
 
-## 첫 화면
+## 빠른 시작
+
+다음 예제는 필요한 import를 포함합니다
 
 ```kotlin
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import io.github.hanhyo.composemindmap.canvas.MindMapCanvas
+import io.github.hanhyo.composemindmap.model.MindMapNode
+
 @Composable
 fun MyMindMap() {
     val nodes = listOf(
-        MindMapNode(id = "root", title = "내 아이디어"),
-        MindMapNode(id = "first", title = "첫 번째 가지", parentId = "root"),
+        MindMapNode(id = "idea", title = "내 아이디어"),
+        MindMapNode(id = "research", title = "조사", parentId = "idea"),
+        MindMapNode(id = "build", title = "만들기", parentId = "idea"),
     )
+
     MindMapCanvas(nodes = nodes, modifier = Modifier.fillMaxSize())
 }
 ```
 
-`MindMapCanvas`와 `MindMapNode`는 각각 `io.github.hanhyo.composemindmap.canvas`, `io.github.hanhyo.composemindmap.model` 패키지에 있습니다. 모든 노드는 고유 ID를 가져야 하고 루트는 하나여야 합니다
+루트는 하나여야 하며 루트의 `parentId`는 `null`입니다. ID는 고유해야 하고 나머지 노드의 부모 ID는 목록 안에 있어야 합니다. 잘못된 트리는 `onValidationError`를 호출하고 기본 오류 UI를 보여 줍니다
 
-## 원하는 모습과 동작으로 바꾸기
+## 다음 단계
 
-- `MindMapStyle`로 기본 카드·간선 색상과 크기·간격을 바꾸고, `MindMapNode.color`로 노드별 색상을 지정합니다
-- `nodeContent`에는 원하는 Compose 카드를 넣습니다. 카드의 실제 크기가 다르면 `nodeSize`도 함께 지정해야 배치와 터치 판정이 맞습니다
-- `PayloadMindMapCanvas`와 `withPayload`를 쓰면 노드별 도메인 데이터를 타입을 유지한 채 카드에 전달할 수 있습니다
-- `layoutEngine`으로 위에서 아래/왼쪽에서 오른쪽 배치를, `edgeRenderer`로 곡선/직선/직각 간선을 선택합니다
-- `MindMapBehavior`로 확대·이동 가능 여부, 확대 범위, 초기 화면 배치를 지정합니다
-- 접근성 설명은 `semanticLabelProvider = MindMapSemanticLabelProvider { node, visual -> … }`로, 동작 이름은 `accessibilityActionLabels`로 바꿀 수 있습니다. `visual`에는 선택·접힘 상태가 들어 있습니다
+- [영문 상세 사용 가이드](USAGE.md): 커스텀 카드와 `nodeSize`, 앱 소유 편집·Undo/Redo, 뷰포트 예제
+- [0.1.1에서 마이그레이션](MIGRATION-0.2.0.md)
+- [영문 README](../README.md)
+- [변경 이력](../CHANGELOG.md) · [Apache-2.0 라이선스](../LICENSE)
 
-완전한 코드는 [샘플 액티비티](../sample/src/main/java/io/github/hanhyo/composemindmap/sample/SampleActivity.kt)를 참고하세요
-
-## 편집과 화면 복원
-
-노드 목록은 앱이 소유합니다. `MindMapEditController`의 `addNode`, `updateNode`, `deleteNode`, `moveNode`, `undo`, `redo`로 새 목록을 만든 뒤 다시 `MindMapCanvas`에 전달합니다. `editMode = true`를 켜야 자식 추가 버튼과 노드 이동을 사용할 수 있습니다. 이동할 노드를 먼저 선택한 다음 다른 노드로 드래그합니다. 자기 자신 또는 자신의 하위 노드로 이동하는 동작은 거부됩니다
-
-접힌 노드 ID 집합은 `collapsedNodeIds`에 전달합니다. 화면 확대율과 위치를 재생성 후 복원하려면 `rememberSaveableMindMapCanvasState()`를 사용합니다. 노드 데이터와 편집 이력은 앱에서 별도 저장해야 합니다
-
-`state.centerRoot()`, `state.fitContent()`, `state.zoomBy(1.4f)`, `state.focusNode(id, padding = 32.dp)`로 원하는 위치에 화면을 맞출 수 있습니다. `focusNode`의 여백은 최소 확대율 제한이 허용하는 범위에서 적용됩니다
-
-## 실행과 범위
-
-Android Studio에서 `sample`을 실행하거나 `./gradlew :sample:installDebug`를 실행합니다. 단위 테스트·lint·릴리스 AAR·샘플 빌드 명령은 [영문 README](../README.md#run-the-sample-and-tests)에 있습니다
-
-현재 Android 전용 단일 루트 트리를 지원합니다. 방사형·양방향 배치, 교차 간선, 내보내기, Compose Multiplatform, 대형 트리 성능 최적화는 후속 과제입니다. 사용 전 [0.2.0 마이그레이션 안내](MIGRATION-0.2.0.md)도 확인하세요
+현재 단일 루트 트리, 두 가지 기본 배치, 세 가지 간선 렌더러를 지원합니다. 방사형·양방향 배치, 교차 간선, 가져오기·내보내기, Compose Multiplatform은 지원하지 않습니다. 대형 트리 성능은 아직 벤치마크하지 않았습니다
