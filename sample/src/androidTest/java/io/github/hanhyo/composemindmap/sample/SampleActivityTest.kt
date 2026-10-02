@@ -61,13 +61,19 @@ class SampleActivityTest {
     fun 샘플의_커스텀_카드에서_핀치_줌과_두_손가락_이동이_적용된다() {
         composeRule.onNodeWithText("Controls").performClick()
         composeRule.onNodeWithText("Card: Canvas").performClick()
-        composeRule.onNodeWithContentDescription("Build an idea, ROOT").assertExists()
-        composeRule.onNodeWithContentDescription("Plan, TOPIC").assertExists()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Mind map controls").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Build an idea, ROOT").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Plan, TOPIC").assertIsDisplayed()
 
         val before = composeRule.onNodeWithContentDescription("Build an idea, ROOT").getUnclippedBoundsInRoot()
+        var pinchStart = Offset.Zero
+        var pinchEnd = Offset.Zero
         composeRule.onNodeWithTag("mind-map-viewport").performTouchInput {
             val start = Offset(center.x, center.y)
             val end = start + Offset(28f, 24f)
+            pinchStart = start
+            pinchEnd = end
             pinch(
                 start0 = start + Offset(-70f, 0f),
                 end0 = end + Offset(-125f, 0f),
@@ -82,8 +88,15 @@ class SampleActivityTest {
         val afterWidth = after.right.value - after.left.value
         val beforeCenter = Offset((before.left.value + before.right.value) / 2f, (before.top.value + before.bottom.value) / 2f)
         val afterCenter = Offset((after.left.value + after.right.value) / 2f, (after.top.value + after.bottom.value) / 2f)
-        assertTrue("Pinching outward should enlarge the node", afterWidth > beforeWidth)
-        assertNotEquals("The moving pinch centroid should translate the node", beforeCenter, afterCenter)
+        assertTrue(
+            "Pinching outward should enlarge the node: viewport pinch $pinchStart → $pinchEnd, width $beforeWidth → $afterWidth, center $beforeCenter → $afterCenter",
+            afterWidth > beforeWidth,
+        )
+        assertNotEquals(
+            "The moving pinch centroid should translate the node: viewport pinch $pinchStart → $pinchEnd, center $beforeCenter → $afterCenter",
+            beforeCenter,
+            afterCenter,
+        )
     }
 
     @Test
