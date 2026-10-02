@@ -2,6 +2,7 @@ package io.github.hanhyo.composemindmap.sample
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -66,7 +67,17 @@ class SampleActivityTest {
         composeRule.onNodeWithContentDescription("Build an idea, ROOT").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Plan, TOPIC").assertIsDisplayed()
 
-        val before = composeRule.onNodeWithContentDescription("Build an idea, ROOT").getUnclippedBoundsInRoot()
+        val rootNode = composeRule.onNodeWithContentDescription("Build an idea, ROOT")
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            val layoutBounds = rootNode.getUnclippedBoundsInRoot()
+            val layoutWidth = layoutBounds.right.value - layoutBounds.left.value
+            val layoutHeight = layoutBounds.bottom.value - layoutBounds.top.value
+            layoutWidth in 195f..197f && layoutHeight in 83f..85f
+        }
+        val layoutBounds = rootNode.getUnclippedBoundsInRoot()
+        assertEquals(196f, layoutBounds.right.value - layoutBounds.left.value, 1f)
+        assertEquals(84f, layoutBounds.bottom.value - layoutBounds.top.value, 1f)
+        val before = rootNode.getBoundsInRoot()
         var pinchStart = Offset.Zero
         var pinchEnd = Offset.Zero
         composeRule.onNodeWithTag("mind-map-viewport").performTouchInput {
@@ -83,7 +94,7 @@ class SampleActivityTest {
         }
         composeRule.waitForIdle()
 
-        val after = composeRule.onNodeWithContentDescription("Build an idea, ROOT").getUnclippedBoundsInRoot()
+        val after = rootNode.getBoundsInRoot()
         val beforeWidth = before.right.value - before.left.value
         val afterWidth = after.right.value - after.left.value
         val beforeCenter = Offset((before.left.value + before.right.value) / 2f, (before.top.value + before.bottom.value) / 2f)
