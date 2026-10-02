@@ -119,9 +119,14 @@ class MindMapCanvasInstrumentedTest {
             )
         }
         composeRule.waitForIdle()
+        val oldScale = viewport.scale
         val oldOffset = viewport.offset
+        var initialCentroid = Offset.Zero
+        var movedCentroid = Offset.Zero
         composeRule.onRoot().performTouchInput {
             val middle = Offset(center.x, center.y)
+            initialCentroid = middle
+            movedCentroid = middle + Offset(0f, 40f)
             pinch(
                 start0 = middle + Offset(-80f, 0f),
                 end0 = middle + Offset(-170f, 40f),
@@ -129,9 +134,15 @@ class MindMapCanvasInstrumentedTest {
                 end1 = middle + Offset(170f, 40f),
             )
         }
+        val worldPointAtInitialCentroid = (initialCentroid - oldOffset) / oldScale
         composeRule.runOnIdle {
             assertTrue(viewport.scale > 1f)
             assertTrue(viewport.offset != oldOffset)
+            val projectedWorldPoint = worldPointAtInitialCentroid * viewport.scale + viewport.offset
+            assertTrue(
+                "The initial focal point should follow the moved pinch centroid: $projectedWorldPoint → $movedCentroid",
+                (projectedWorldPoint - movedCentroid).getDistance() < 2f,
+            )
         }
     }
 
