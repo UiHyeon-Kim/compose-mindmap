@@ -2,6 +2,8 @@
 
 This guide expands the [README quick start](../README.md#quick-start) with complete examples for custom Compose cards, app-owned edits, and viewport controls. The library accepts a flat list of nodes; your app keeps that list as its source of truth.
 
+The standalone [consumer smoke app](../consumer-smoke/README.md) compile-checks the complete custom-card, editing/history, and saveable-viewport examples against the current Maven Local publication. It does not prove the public JitPack artifact is available.
+
 ## AGP 9.1 build settings
 
 This repository uses AGP 9.1.0 with `android.builtInKotlin=false` and `android.newDsl=false` in its root [gradle.properties](../gradle.properties). The standalone consumer fixture mirrors those settings. If your consumer also uses AGP 9.1.0, use the same properties in its root `gradle.properties`; validate the settings against your chosen AGP before copying them to a different version.
@@ -46,7 +48,7 @@ fun CustomCardMindMap(nodes: List<MindMapNode>) {
         nodes = nodes,
         modifier = Modifier.fillMaxSize(),
         nodeSize = { node ->
-            if (node.id == "root") DpSize(196.dp, 88.dp) else DpSize(160.dp, 72.dp)
+            if (node.parentId == null) DpSize(196.dp, 88.dp) else DpSize(160.dp, 72.dp)
         },
         nodeContent = { node, visualState ->
             val colors = MaterialTheme.colorScheme
@@ -69,6 +71,8 @@ fun CustomCardMindMap(nodes: List<MindMapNode>) {
     )
 }
 ```
+
+The standalone [consumer smoke app](../consumer-smoke/README.md) compiles this card and lets you switch between it and the README Quick Start.
 
 The library keeps the node's accessibility actions and label around custom content. Use `semanticLabelProvider` to tailor the node description, or `accessibilityActionLabels` to replace the localized action names. Avoid adding a second accessibility node for the same card inside `nodeContent`.
 

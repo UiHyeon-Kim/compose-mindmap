@@ -262,25 +262,34 @@ The input tree must contain:
 
 ## Custom Compose cards
 
-The default renderer draws cards on Canvas, but `nodeContent` can replace them with normal Compose UI.
+The default renderer draws cards on Canvas, but `nodeContent` can replace them with Compose UI. `nodeSize` tells the layout engine how much space each card uses.
 
 ```kotlin
-MindMapCanvas(
-    nodes = nodes,
-    nodeSize = { node ->
-        // Size used by the layout engine.
-    },
-    nodeContent = { node, visualState ->
-        // Your Compose card.
-    },
-)
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import io.github.hanhyo.composemindmap.canvas.MindMapCanvas
+import io.github.hanhyo.composemindmap.model.MindMapNode
+
+@Composable
+fun CustomCardMindMap(nodes: List<MindMapNode>) {
+    MindMapCanvas(
+        nodes = nodes,
+        modifier = Modifier.fillMaxSize(),
+        nodeSize = { DpSize(160.dp, 72.dp) },
+        nodeContent = { node, _ -> BasicText(node.title) },
+    )
+}
 ```
 
-When using custom cards, `nodeSize` should match the rendered content size so that layout spacing, hit testing, and connector endpoints stay aligned.
+When using custom cards, keep `nodeSize` consistent with your card's measured size so that layout spacing, hit testing, and connector endpoints stay aligned. See the [Usage guide](docs/USAGE.md) for a complete Material 3 card and editing examples.
 
 For typed application data, use `PayloadMindMapCanvas` together with `withPayload`.
 
-See the [Usage guide](docs/USAGE.md) for complete examples.
+The standalone [consumer smoke app](consumer-smoke/README.md) compiles five examples: the Quick Start, this compact card, the full Material 3 card, editing/history, and viewport controls. You can switch between the Quick Start and full custom card at runtime.
 
 ---
 
