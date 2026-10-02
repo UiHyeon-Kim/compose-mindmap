@@ -3,15 +3,18 @@ package io.github.hanhyo.composemindmap.canvas
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -26,14 +29,17 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
+import io.github.hanhyo.composemindmap.R
 import io.github.hanhyo.composemindmap.layout.MindMapLayoutEngine
 import io.github.hanhyo.composemindmap.layout.MindMapLayoutInput
 import io.github.hanhyo.composemindmap.layout.MindMapLayoutNode
@@ -52,6 +58,11 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
+/**
+ * Displays a single-root tree of [nodes]. The caller owns edits and supplies the updated list.
+ * [nodeContent] replaces Canvas-drawn cards; keep [nodeSize] aligned with its measured size.
+ * Invalid input invokes [onValidationError] and renders [errorContent] or a localized default.
+ */
 @Composable
 fun MindMapCanvas(
     nodes: List<MindMapNode>,
@@ -70,7 +81,9 @@ fun MindMapCanvas(
     addChildActionLayout: MindMapAddChildActionLayout = DefaultMindMapAddChildActionLayout,
     editDecorationRenderer: MindMapEditDecorationRenderer? = null,
     semanticLabelProvider: MindMapSemanticLabelProvider = DefaultMindMapSemanticLabelProvider,
+    accessibilityActionLabels: MindMapAccessibilityActionLabels? = null,
     nodeContent: (@Composable (MindMapNode, MindMapNodeVisualState) -> Unit)? = null,
+    errorContent: (@Composable (MindMapValidationResult.Invalid) -> Unit)? = null,
     onValidationError: (MindMapValidationResult.Invalid) -> Unit = {},
     onNodeClick: (nodeId: String) -> Unit = {},
     onNodeLongClick: (nodeId: String) -> Unit = {},
@@ -79,12 +92,19 @@ fun MindMapCanvas(
     onNodeMove: (nodeId: String, newParentId: String) -> Unit = { _, _ -> },
 ) {
     val density = LocalDensity.current
+    val labels = accessibilityActionLabels ?: MindMapAccessibilityActionLabels(
+        select = stringResource(R.string.mind_map_select),
+        longPress = stringResource(R.string.mind_map_long_press),
+        addChild = stringResource(R.string.mind_map_add_child),
+    )
+    val defaultErrorMessage = stringResource(R.string.mind_map_invalid_tree)
     val visibleNodes = remember(nodes, collapsedNodeIds) {
         nodes.withoutCollapsedSubtrees(collapsedNodeIds)
     }
     val childNodeIds = remember(nodes) { nodes.mapNotNullTo(mutableSetOf()) { it.parentId } }
-    val validation = remember(visibleNodes) { validateMindMapNodes(visibleNodes) }
-    val layoutResult = remember(visibleNodes, style, nodeSize, validation, layoutEngine) {
+    val parentById = remember(nodes) { nodes.associate { it.id to it.parentId } }
+    val validation = remember(nodes) { validateMindMapNodes(nodes) }
+    val layoutResult = remember(visibleNodes, style, nodeSize, validation, layoutEngine, density) {
         if (validation is MindMapValidationResult.Valid) {
             layoutEngine.layout(MindMapLayoutInput(visibleNodes, style, density, nodeSize))
         } else {
@@ -97,16 +117,23 @@ fun MindMapCanvas(
         editDecorationRenderer ?: DefaultMindMapEditDecorationRenderer(textMeasurer)
     }
     var canvasSize by remember { mutableStateOf(Size.Zero) }
-    var initiallyCentered by remember { mutableStateOf(false) }
-    var centeredLayoutEngine by remember { mutableStateOf<MindMapLayoutEngine?>(null) }
+    var centeredLayoutEngine by remember(state) {
+        mutableStateOf<MindMapLayoutEngine?>(if (state.initialViewportApplied) layoutEngine else null)
+    }
 
     LaunchedEffect(validation) {
         if (validation is MindMapValidationResult.Invalid) onValidationError(validation)
     }
+    if (validation is MindMapValidationResult.Invalid) {
+        Box(modifier.fillMaxSize()) {
+            if (errorContent != null) errorContent(validation) else BasicText(defaultErrorMessage)
+        }
+        return
+    }
     LaunchedEffect(canvasSize, state.commandVersion, layoutedNodes.isNotEmpty(), layoutEngine) {
         if (canvasSize.width <= 0 || layoutedNodes.isEmpty()) return@LaunchedEffect
         val command = state.pendingCommand
-        val applyInitialPolicy = !initiallyCentered || centeredLayoutEngine !== layoutEngine
+        val applyInitialPolicy = !state.initialViewportApplied || centeredLayoutEngine !== layoutEngine
         if (command == null && !applyInitialPolicy) return@LaunchedEffect
 
         val effectiveCommand = command ?: when (behavior.initialViewportPolicy) {
@@ -116,22 +143,15 @@ fun MindMapCanvas(
         } ?: return@LaunchedEffect
 
         applyViewportCommand(effectiveCommand, layoutedNodes, layoutEngine, canvasSize, state, behavior, density)
-        initiallyCentered = true
+        state.initialViewportApplied = true
         centeredLayoutEngine = layoutEngine
         state.pendingCommand = null
-    }
-
-    val transformableState = rememberTransformableState { zoomChange, _, _ ->
-        if (behavior.zoomEnabled) {
-            state.scale = (state.scale * zoomChange).coerceIn(behavior.minScale, behavior.maxScale)
-        }
     }
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .onSizeChanged { canvasSize = Size(it.width.toFloat(), it.height.toFloat()) }
-            .transformable(transformableState)
             .pointerInput(layoutedNodes, editMode, selectedNodeId, behavior, editPolicy, collapsedNodeIds) {
                 val touchSlop = viewConfiguration.touchSlop
                 awaitEachGesture {
@@ -150,10 +170,11 @@ fun MindMapCanvas(
                     var longPressed = false
                     var totalDrag = Offset.Zero
                     var pressed = true
+                    var multiTouchOccurred = false
                     var lastUptimeMillis = down.uptimeMillis
 
                     while (pressed) {
-                        val event = if (!dragging && !longPressed && hitNode != null) {
+                        val event = if (!multiTouchOccurred && !dragging && !longPressed && hitNode != null) {
                             val elapsed = lastUptimeMillis - down.uptimeMillis
                             val remaining = (viewConfiguration.longPressTimeoutMillis - elapsed).coerceAtLeast(1L)
                             withTimeoutOrNull(remaining) { awaitPointerEvent() }
@@ -168,6 +189,24 @@ fun MindMapCanvas(
                         val change = event.changes.firstOrNull() ?: break
                         lastUptimeMillis = change.uptimeMillis
                         pressed = event.changes.any { it.pressed }
+                        if (event.changes.count { it.pressed } > 1) {
+                            multiTouchOccurred = true
+                            state.dragging = null
+                            val centroid = event.calculateCentroid(useCurrent = true)
+                            val pan = event.calculatePan()
+                            val oldScale = state.scale
+                            val newScale = if (behavior.zoomEnabled) {
+                                (oldScale * event.calculateZoom()).coerceIn(behavior.minScale, behavior.maxScale)
+                            } else oldScale
+                            val appliedPan = if (behavior.panEnabled) pan else Offset.Zero
+                            if (centroid != Offset.Unspecified) {
+                                state.offset = centroid - (centroid - appliedPan - state.offset) * (newScale / oldScale)
+                                state.scale = newScale
+                            }
+                            event.changes.forEach { it.consume() }
+                            continue
+                        }
+                        if (multiTouchOccurred) continue
                         if (!change.pressed) continue
 
                         val delta = change.positionChange()
@@ -185,6 +224,7 @@ fun MindMapCanvas(
                             val dropTarget = layoutedNodes.firstOrNull {
                                 it.node.id != hitNode.node.id &&
                                     it.contains(localPos) &&
+                                    !parentById.isDescendantOf(it.node.id, hitNode.node.id) &&
                                     editPolicy.canDrop(hitNode.node, it.node)
                             }
                             state.dragging = NodeDragState(hitNode.node.id, change.position, dropTarget?.node?.id)
@@ -195,7 +235,9 @@ fun MindMapCanvas(
                     }
 
                     val dragState = state.dragging
-                    if (dragState != null) {
+                    if (multiTouchOccurred) {
+                        state.dragging = null
+                    } else if (dragState != null) {
                         dragState.dropTargetId?.let { onNodeMove(dragState.nodeId, it) }
                         state.dragging = null
                     } else if (!dragging && !longPressed) {
@@ -271,29 +313,31 @@ fun MindMapCanvas(
         Box(slotTransformModifier) {
             layoutedNodes.forEach { layouted ->
                 val visState = layouted.visualState(state, selectedNodeId, childNodeIds, collapsedNodeIds)
-                Box(
-                    Modifier
-                        .offset {
-                            IntOffset(layouted.offset.x.roundToInt(), layouted.offset.y.roundToInt())
-                        }
-                        .size(
-                            width = with(density) { layouted.size.width.toDp() },
-                            height = with(density) { layouted.size.height.toDp() },
-                        )
-                        .semantics(mergeDescendants = true) {
-                            contentDescription = semanticLabelProvider.label(layouted.node)
-                            onClick(label = "선택") { onNodeClick(layouted.node.id); true }
-                            onLongClick(label = "길게 누르기") { onNodeLongClick(layouted.node.id); true }
-                            if (editMode && behavior.addChildButtonsVisible && editPolicy.canAddChild(layouted.node)) {
-                                customActions = listOf(
-                                    CustomAccessibilityAction(
-                                        label = "자식 노드 추가",
-                                        action = { onAddChildClick(layouted.node.id); true },
-                                    )
-                                )
+                key(layouted.node.id) {
+                    Box(
+                        Modifier
+                            .offset {
+                                IntOffset(layouted.offset.x.roundToInt(), layouted.offset.y.roundToInt())
                             }
-                        },
-                )
+                            .size(
+                                width = with(density) { layouted.size.width.toDp() },
+                                height = with(density) { layouted.size.height.toDp() },
+                            )
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = semanticLabelProvider.label(layouted.node, visState)
+                                onClick(label = labels.select) { onNodeClick(layouted.node.id); true }
+                                onLongClick(label = labels.longPress) { onNodeLongClick(layouted.node.id); true }
+                                if (editMode && behavior.addChildButtonsVisible && editPolicy.canAddChild(layouted.node)) {
+                                    customActions = listOf(
+                                        CustomAccessibilityAction(
+                                            label = labels.addChild,
+                                            action = { onAddChildClick(layouted.node.id); true },
+                                        )
+                                    )
+                                }
+                            },
+                    )
+                }
             }
         }
 
@@ -309,17 +353,20 @@ fun MindMapCanvas(
                         layouted.offset.y + layouted.size.height < visTop ||
                         layouted.offset.y > visBottom
                     ) return@forEach
-                    Box(
-                        Modifier
-                            .offset {
-                                IntOffset(layouted.offset.x.roundToInt(), layouted.offset.y.roundToInt())
-                            }
-                            .size(
-                                width = with(density) { layouted.size.width.toDp() },
-                                height = with(density) { layouted.size.height.toDp() },
-                            ),
-                    ) {
-                        nodeContent(layouted.node, layouted.visualState(state, selectedNodeId, childNodeIds, collapsedNodeIds))
+                    key(layouted.node.id) {
+                        Box(
+                            Modifier
+                                .offset {
+                                    IntOffset(layouted.offset.x.roundToInt(), layouted.offset.y.roundToInt())
+                                }
+                                .size(
+                                    width = with(density) { layouted.size.width.toDp() },
+                                    height = with(density) { layouted.size.height.toDp() },
+                                )
+                                .clearAndSetSemantics { },
+                        ) {
+                            nodeContent(layouted.node, layouted.visualState(state, selectedNodeId, childNodeIds, collapsedNodeIds))
+                        }
                     }
                 }
 
@@ -364,6 +411,20 @@ private fun MindMapLayoutNode.visualState(
 private fun MindMapLayoutNode.contains(point: Offset): Boolean =
     point.x in offset.x..(offset.x + size.width) && point.y in offset.y..(offset.y + size.height)
 
+internal fun List<MindMapNode>.isDescendantOf(candidateId: String, ancestorId: String): Boolean {
+    return associate { it.id to it.parentId }.isDescendantOf(candidateId, ancestorId)
+}
+
+private fun Map<String, String?>.isDescendantOf(candidateId: String, ancestorId: String): Boolean {
+    val visited = mutableSetOf<String>()
+    var current = this[candidateId]
+    while (current != null && visited.add(current)) {
+        if (current == ancestorId) return true
+        current = this[current]
+    }
+    return false
+}
+
 private fun List<MindMapNode>.withoutCollapsedSubtrees(collapsedNodeIds: Set<String>): List<MindMapNode> {
     if (collapsedNodeIds.isEmpty()) return this
     val nodeIds = mapTo(mutableSetOf()) { it.id }
@@ -396,6 +457,12 @@ private fun applyViewportCommand(
     density: androidx.compose.ui.unit.Density,
 ) {
     when (command) {
+        is ViewportCommand.ZoomBy -> {
+            val center = Offset(canvasSize.width / 2f, canvasSize.height / 2f)
+            val newScale = (state.scale * command.factor).coerceIn(behavior.minScale, behavior.maxScale)
+            state.offset = center - (center - state.offset) * (newScale / state.scale)
+            state.scale = newScale
+        }
         is ViewportCommand.CenterRoot -> {
             val root = layoutedNodes.firstOrNull { it.node.parentId == null } ?: return
             val rootCenter = Offset(root.offset.x + root.size.width / 2f, root.offset.y + root.size.height / 2f)
@@ -435,6 +502,11 @@ private fun applyViewportCommand(
         }
         is ViewportCommand.FocusNode -> {
             val target = layoutedNodes.firstOrNull { it.node.id == command.nodeId } ?: return
+            val padding = with(density) { command.padding.toPx() }.coerceAtLeast(0f)
+            val availableWidth = (canvasSize.width - padding * 2f).coerceAtLeast(1f)
+            val availableHeight = (canvasSize.height - padding * 2f).coerceAtLeast(1f)
+            val fitScale = minOf(availableWidth / target.size.width, availableHeight / target.size.height)
+            state.scale = minOf(state.scale, fitScale).coerceIn(behavior.minScale, behavior.maxScale)
             val nodeCenter = Offset(
                 target.offset.x + target.size.width / 2f,
                 target.offset.y + target.size.height / 2f,

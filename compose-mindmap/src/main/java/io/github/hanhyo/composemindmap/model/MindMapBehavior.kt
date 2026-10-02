@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+/** How the viewport is placed when no saved position or explicit command exists. */
 enum class InitialViewportPolicy {
     ROOT_ALIGNED,
     FIT_CONTENT,
@@ -11,6 +12,7 @@ enum class InitialViewportPolicy {
 }
 
 @Immutable
+/** Gesture switches, zoom limits, edit affordances, and initial viewport behavior. */
 data class MindMapBehavior(
     val minScale: Float = 0.5f,
     val maxScale: Float = 3f,
@@ -24,7 +26,7 @@ data class MindMapBehavior(
     val fitContentPadding: Dp = 24.dp,
 ) {
     init {
-        require(minScale > 0f) { "minScale must be greater than zero" }
-        require(maxScale >= minScale) { "maxScale must be greater than or equal to minScale" }
+        require(minScale.isFinite() && minScale > 0f) { "minScale must be finite and greater than zero" }
+        require(maxScale.isFinite() && maxScale >= minScale) { "maxScale must be finite and greater than or equal to minScale" }
     }
 }

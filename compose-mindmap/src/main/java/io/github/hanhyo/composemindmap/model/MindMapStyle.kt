@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Stable
+/** Shared visual dimensions, colors, and text styles for the built-in node and edge renderers. */
 data class MindMapStyle(
     val nodeWidth: Dp = 160.dp,
     val nodeHeight: Dp = 56.dp,

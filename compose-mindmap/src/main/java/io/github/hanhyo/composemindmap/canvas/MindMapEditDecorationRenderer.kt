@@ -11,6 +11,7 @@ import androidx.compose.ui.text.style.TextAlign
 import io.github.hanhyo.composemindmap.layout.MindMapLayoutNode
 import io.github.hanhyo.composemindmap.model.MindMapStyle
 
+/** Draws edit-only decorations such as add-child and drop-target indicators. */
 interface MindMapEditDecorationRenderer {
     fun DrawScope.drawAddChildAction(action: MindMapAddChildAction, style: MindMapStyle)
     fun DrawScope.drawDropTarget(node: MindMapLayoutNode, style: MindMapStyle)
