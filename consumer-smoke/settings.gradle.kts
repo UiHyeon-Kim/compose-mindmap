@@ -12,6 +12,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        if (providers.gradleProperty("mindMapRepository").orNull == "mavenLocal") mavenLocal()
         maven("https://jitpack.io")
     }
 }

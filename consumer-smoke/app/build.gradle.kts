@@ -25,8 +25,13 @@ kotlin {
 
 dependencies {
     val mindMapVersion = providers.gradleProperty("mindMapVersion").orElse("0.2.0").get()
-    implementation("com.github.UiHyeon-Kim:compose-mindmap:$mindMapVersion")
+    val useMavenLocal = providers.gradleProperty("mindMapRepository").orNull == "mavenLocal"
+    val mindMapGroup = providers.gradleProperty("mindMapGroup").orElse(
+        if (useMavenLocal) "io.github.hanhyo" else "com.github.UiHyeon-Kim",
+    ).get()
+    implementation("$mindMapGroup:compose-mindmap:$mindMapVersion")
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation(platform("androidx.compose:compose-bom:2026.03.01"))
     implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.material3:material3")
 }
