@@ -91,7 +91,7 @@ class MindMapCanvasInstrumentedTest {
     }
 
     @Test
-    fun invalidTree_rendersCustomErrorContent() {
+    fun `잘못된_트리는_커스텀_오류_콘텐츠를_그린다`() {
         composeRule.setContent {
             MindMapCanvas(
                 nodes = listOf(MindMapNode("a", "A"), MindMapNode("b", "B")),
@@ -102,7 +102,7 @@ class MindMapCanvasInstrumentedTest {
     }
 
     @Test
-    fun twoFingerGesture_zoomsAndPans() {
+    fun `두_손가락_제스처는_확대와_이동을_함께_적용한다`() {
         val viewport = MindMapCanvasState()
         composeRule.setContent {
             MindMapCanvas(
@@ -128,7 +128,7 @@ class MindMapCanvasInstrumentedTest {
     }
 
     @Test
-    fun customCard_hasOneStateAwareAccessibilityNode() {
+    fun `커스텀_카드는_상태_기반_접근성_노드를_하나만_노출한다`() {
         composeRule.setContent {
             MindMapCanvas(
                 nodes = listOf(MindMapNode("root", "Root")),
@@ -144,7 +144,7 @@ class MindMapCanvasInstrumentedTest {
     }
 
     @Test
-    fun collapsedBranch_hidesDescendants() {
+    fun `접힌_브랜치에서는_하위_노드를_표시하지_않는다`() {
         var collapsed by mutableStateOf(emptySet<String>())
         composeRule.setContent {
             MindMapCanvas(
@@ -162,7 +162,7 @@ class MindMapCanvasInstrumentedTest {
     }
 
     @Test
-    fun restoredViewport_isNotRecentered() {
+    fun `저장된_뷰포트_복원_뒤에도_노드_오프셋을_유지한다`() {
         val restoration = StateRestorationTester(composeRule)
         var viewport: MindMapCanvasState? = null
         restoration.setContent {
@@ -182,7 +182,7 @@ class MindMapCanvasInstrumentedTest {
     }
 
     @Test
-    fun draggingOntoDescendant_doesNotRequestMove() {
+    fun `후손_노드에_드롭하면_이동_콜백을_호출하지_않는다`() {
         var moves = 0
         composeRule.setContent {
             MindMapCanvas(

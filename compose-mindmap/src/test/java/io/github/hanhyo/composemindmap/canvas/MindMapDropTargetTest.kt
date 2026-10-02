@@ -13,7 +13,8 @@ class MindMapDropTargetTest {
         MindMapNode("peer", "Peer", parentId = "root"),
     )
 
-    @Test fun descendantsCannotBeDropParents() {
+    @Test
+    fun `후손_판정은_조상과_자기_자신을_구분한다`() {
         assertTrue(nodes.isDescendantOf("b", "a"))
         assertTrue(nodes.isDescendantOf("b", "root"))
         assertFalse(nodes.isDescendantOf("peer", "a"))
