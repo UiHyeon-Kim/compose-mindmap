@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
@@ -41,6 +42,7 @@ import androidx.core.view.WindowCompat
 import io.github.hanhyo.composemindmap.canvas.CurvedMindMapEdgeRenderer
 import io.github.hanhyo.composemindmap.canvas.MindMapCanvas
 import io.github.hanhyo.composemindmap.canvas.MindMapEdgeRenderer
+import io.github.hanhyo.composemindmap.canvas.MindMapSemanticLabelProvider
 import io.github.hanhyo.composemindmap.canvas.MindMapNodeVisualState
 import io.github.hanhyo.composemindmap.canvas.OrthogonalMindMapEdgeRenderer
 import io.github.hanhyo.composemindmap.canvas.PayloadMindMapCanvas
@@ -112,6 +114,7 @@ private fun Showcase() {
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
+                .testTag("mind-map-viewport")
 
             Row(
                 modifier = Modifier
@@ -141,6 +144,7 @@ private fun Showcase() {
                 val typedNodes: List<MindMapNodeWithPayload<TopicPayload>> = nodes.map {
                     it.withPayload(TopicPayload(if (it.parentId == null) "ROOT" else "TOPIC"))
                 }
+                val payloadById = typedNodes.associateBy { it.node.id }
                 PayloadMindMapCanvas(
                     nodes = typedNodes,
                     modifier = canvasModifier,
@@ -152,6 +156,9 @@ private fun Showcase() {
                     selectedNodeId = selected,
                     editMode = true,
                     collapsedNodeIds = collapsed,
+                    semanticLabelProvider = MindMapSemanticLabelProvider { node, _ ->
+                        "${node.title}, ${payloadById.getValue(node.id).payload.category}"
+                    },
                     nodeSize = { if (it.node.id == "root") DpSize(196.dp, 84.dp) else DpSize(160.dp, 72.dp) },
                     nodeContent = { item, visualState -> PayloadCard(item, visualState) },
                     onNodeClick = onSelect,
