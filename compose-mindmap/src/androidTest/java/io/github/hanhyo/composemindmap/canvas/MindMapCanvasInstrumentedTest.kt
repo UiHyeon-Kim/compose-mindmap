@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.longClick
@@ -20,9 +21,16 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.pinch
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
 import io.github.hanhyo.composemindmap.model.MindMapNode
+import io.github.hanhyo.composemindmap.model.MindMapStyle
 import io.github.hanhyo.composemindmap.model.MindMapValidationResult
 import io.github.hanhyo.composemindmap.model.withPayload
+import io.github.hanhyo.composemindmap.layout.MindMapLayoutNode
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -111,9 +119,14 @@ class MindMapCanvasInstrumentedTest {
             )
         }
         composeRule.waitForIdle()
+        val oldScale = viewport.scale
         val oldOffset = viewport.offset
+        var initialCentroid = Offset.Zero
+        var movedCentroid = Offset.Zero
         composeRule.onRoot().performTouchInput {
             val middle = Offset(center.x, center.y)
+            initialCentroid = middle
+            movedCentroid = middle + Offset(0f, 40f)
             pinch(
                 start0 = middle + Offset(-80f, 0f),
                 end0 = middle + Offset(-170f, 40f),
@@ -121,9 +134,48 @@ class MindMapCanvasInstrumentedTest {
                 end1 = middle + Offset(170f, 40f),
             )
         }
+        val worldPointAtInitialCentroid = (initialCentroid - oldOffset) / oldScale
         composeRule.runOnIdle {
             assertTrue(viewport.scale > 1f)
             assertTrue(viewport.offset != oldOffset)
+            val projectedWorldPoint = worldPointAtInitialCentroid * viewport.scale + viewport.offset
+            assertTrue(
+                "The initial focal point should follow the moved pinch centroid: $projectedWorldPoint → $movedCentroid",
+                (projectedWorldPoint - movedCentroid).getDistance() < 2f,
+            )
+        }
+    }
+
+    @Test
+    fun `두_손가락_확대는_손가락_중심의_콘텐츠_위치를_유지한다`() {
+        val viewport = MindMapCanvasState()
+        composeRule.setContent {
+            MindMapCanvas(
+                nodes = listOf(MindMapNode("root", "Root")),
+                state = viewport,
+            )
+        }
+        composeRule.waitForIdle()
+
+        val bounds = composeRule.onRoot().getUnclippedBoundsInRoot()
+        val focalPoint = Offset(
+            (bounds.left.value + (bounds.right.value - bounds.left.value) * 0.37f) * composeRule.density.density,
+            (bounds.top.value + (bounds.bottom.value - bounds.top.value) * 0.42f) * composeRule.density.density,
+        )
+        val contentAtFocalPoint = (focalPoint - viewport.offset) / viewport.scale
+        composeRule.onRoot().performTouchInput {
+            pinch(
+                start0 = focalPoint + Offset(-60f, 0f),
+                end0 = focalPoint + Offset(-140f, 0f),
+                start1 = focalPoint + Offset(60f, 0f),
+                end1 = focalPoint + Offset(140f, 0f),
+            )
+        }
+
+        composeRule.runOnIdle {
+            assertTrue(viewport.scale > 1f)
+            val focalPointAfterZoom = contentAtFocalPoint * viewport.scale + viewport.offset
+            assertTrue((focalPointAfterZoom - focalPoint).getDistance() < 2f)
         }
     }
 
@@ -141,6 +193,43 @@ class MindMapCanvasInstrumentedTest {
             )
         }
         assertEquals(1, composeRule.onAllNodesWithContentDescription("Root, selected: true").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    @OptIn(ExperimentalTestApi::class)
+    fun `접근성_하위_추가_동작을_실행하고_터치_영역은_최소_48dp다`() {
+        var addCount = 0
+        val state = MindMapCanvasState()
+        composeRule.setContent {
+            MindMapCanvas(
+                nodes = listOf(MindMapNode("root", "Root")),
+                state = state,
+                selectedNodeId = "root",
+                editMode = true,
+                accessibilityActionLabels = MindMapAccessibilityActionLabels("Choose", "Details", "Add child"),
+                onAddChildClick = { addCount++ },
+            )
+        }
+
+        composeRule.onNodeWithContentDescription("Root")
+            .performCustomAccessibilityActionWithLabel("Add child")
+        composeRule.runOnIdle { assertEquals(1, addCount) }
+
+        val density = Density(2f)
+        val action = DefaultMindMapAddChildActionLayout.layout(
+            node = MindMapLayoutNode(MindMapNode("root", "Root"), Offset.Zero, Size.Zero),
+            style = MindMapStyle(),
+            density = density,
+        )
+        assertTrue("The add-child target must be at least 48dp", action.touchRadius * 2f / density.density >= 48f)
+
+        val nodeBounds = composeRule.onNodeWithContentDescription("Root").getUnclippedBoundsInRoot()
+        val clickPoint = Offset(
+            (nodeBounds.left.value + nodeBounds.right.value) * composeRule.density.density / 2f,
+            (nodeBounds.bottom.value + 10f + 4f + 18f) * composeRule.density.density,
+        )
+        composeRule.onRoot().performTouchInput { click(clickPoint) }
+        composeRule.runOnIdle { assertEquals("The invisible target should accept a touch 18dp from its center", 2, addCount) }
     }
 
     @Test
